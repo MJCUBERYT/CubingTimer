@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cube Timer</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: white;
+}
+
+header {
+    text-align: center;
+    padding: 20px;
+    border-bottom: 1px solid #333;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 32px;
+}
+
+.app {
+    max-width: 1300px;
+    margin: auto;
+    padding: 25px;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 25px;
+}
+
+.main-panel,
+.history-panel {
+    background: #1b1b1b;
+    border: 1px solid #333;
+    border-radius: 14px;
+    padding: 22px;
+}
+
+.main-panel {
+    min-height: 650px;
+    text-align: center;
+}
+
+.scramble {
+    min-height: 70px;
+    font-size: 22px;
+    line-height: 1.6;
+    margin: 10px auto 20px;
+    max-width: 900px;
+    font-weight: bold;
+}
+
+.timer {
+    font-size: clamp(70px, 12vw, 150px);
+    font-weight: bold;
+    margin: 35px 0 10px;
+    user-select: none;
+    letter-spacing: 2px;
+}
+
+.timer.inspection-normal {
+    color: white;
+}
+
+.timer.inspection-warning {
+    color: #ffd43b;
+}
+
+.timer.inspection-danger {
+    color: #ff4d4d;
+}
+
+.status {
+    min-height: 28px;
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+button {
+    background: #2a2a2a;
+    color: white;
+    border: 1px solid #444;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+button:hover {
+    background: #383838;
+}
+
+button.danger {
+    background: #4a2020;
+}
+
+button.danger:hover {
+    background: #632828;
+}
+
+.settings {
+    margin-top: 30px;
+    padding: 15px;
+    background: #151515;
+    border-radius: 10px;
+    text-align: left;
+}
+
+.settings label {
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.settings input {
+    transform: scale(1.2);
+    margin-right: 8px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 35px;
+}
+
+.stat {
+    background: #151515;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 15px 8px;
+}
+
+.stat-title {
+    color: #aaa;
+    font-size: 13px;
+    margin-bottom: 7px;
+}
+
+.stat-value {
+    font-size: 21px;
+    font-weight: bold;
+}
+
+.history-panel h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.history-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.history-actions button {
+    flex: 1;
+}
+
+.history {
+    max-height: 570px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.solve {
+    background: #151515;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.solve-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.solve-number {
+    color: #888;
+    font-size: 13px;
+}
+
+.solve-time {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.solve-buttons {
+    display: flex;
+    gap: 5px;
+    margin-top: 9px;
+    flex-wrap: wrap;
+}
+
+.solve-buttons button {
+    padding: 6px 9px;
+    font-size: 12px;
+}
+
+.scramble-box {
+    display: none;
+    margin-top: 10px;
+    padding: 10px;
+    background: #202020;
+    border-radius: 7px;
+    color: #ddd;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.scramble-box.show {
+    display: block;
+}
+
+.empty-history {
+    text-align: center;
+    color: #777;
+    padding: 40px 10px;
+}
+
+@media (max-width: 850px) {
+    .app {
+        grid-template-columns: 1fr;
+    }
+
+    .history-panel {
+        order: 2;
+    }
+
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .main-panel {
+        min-height: auto;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Cube Timer</h1>
+</header>
+
+<div class="app">
+
+    <main class="main-panel">
+
+        <div id="scramble" class="scramble">
+            Loading scramble...
+        </div>
+
+        <div id="timer" class="timer">
+            0.00
+        </div>
+
+        <div id="status" class="status">
+            Press and hold SPACE to start
+        </div>
+
+        <div class="controls">
+            <button id="newScramble">
+                New Scramble
+            </button>
+        </div>
+
+        <div class="settings">
+            <label>
+                <input type="checkbox" id="inspectionToggle">
+                Enable 15-second inspection
+            </label>
+        </div>
+
+        <div class="stats">
+
+            <div class="stat">
+                <div class="stat-title">Best</div>
+                <div id="best" class="stat-value">--</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Ao5</div>
+                <div id="ao5" class="stat-value">--</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Ao12</div>
+                <div id="ao12" class="stat-value">--</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Solves</div>
+                <div id="solveCount" class="stat-value">0</div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <aside class="history-panel">
+
+        <h2>Solve History</h2>
+
+        <div class="history-actions">
+            <button id="clearHistory" class="danger">
+                Clear History
+            </button>
+        </div>
+
+        <div id="history" class="history">
+            <div class="empty-history">
+                No solves yet.
+            </div>
+        </div>
+
+    </aside>
+
+</div>
+
+<script>
+
+let solves = [];
+let currentScramble = "";
+let inspectionEnabled = false;
+
+let timerRunning = false;
+let inspectionRunning = false;
+
+let timerStart = 0;
+let inspectionStart = 0;
+
+let timerInterval = null;
+let inspectionInterval = null;
+
+let spaceHeld = false;
+
+let cooldownUntil = 0;
+
+const timerElement =
+    document.getElementById("timer");
+
+const scrambleElement =
+    document.getElementById("scramble");
+
+const statusElement =
+    document.getElementById("status");
+
+const inspectionToggle =
+    document.getElementById("inspectionToggle");
+
+const historyElement =
+    document.getElementById("history");
+
+const bestElement =
+    document.getElementById("best");
+
+const ao5Element =
+    document.getElementById("ao5");
+
+const ao12Element =
+    document.getElementById("ao12");
+
+const solveCountElement =
+    document.getElementById("solveCount");
+
+const newScrambleButton =
+    document.getElementById("newScramble");
+
+const clearHistoryButton =
+    document.getElementById("clearHistory");
+
+
+const faces = ["U", "D", "L", "R", "F", "B"];
+const modifiers = ["", "'", "2"];
+
+function generateScramble() {
+
+    const result = [];
+
+    let previousFace = "";
+    let previousAxis = "";
+
+    const axis = {
+        U: "UD",
+        D: "UD",
+        L: "LR",
+        R: "LR",
+        F: "FB",
+        B: "FB"
+    };
+
+    while (result.length < 20) {
+
+        const face =
+            faces[Math.floor(
+                Math.random() * faces.length
+            )];
+
+        if (face === previousFace) {
+            continue;
+        }
+
+        if (axis[face] === previousAxis) {
+            continue;
+        }
+
+        const modifier =
+            modifiers[Math.floor(
+                Math.random() * modifiers.length
+            )];
+
+        result.push(face + modifier);
+
+        previousFace = face;
+        previousAxis = axis[face];
+    }
+
+    return result.join(" ");
+}
+
+
+function newScramble() {
+
+    currentScramble =
+        generateScramble();
+
+    scrambleElement.textContent =
+        currentScramble;
+
+    if (!timerRunning && !inspectionRunning) {
+
+        timerElement.textContent =
+            "0.00";
+
+        timerElement.className =
+            "timer";
+    }
+
+    statusElement.textContent =
+        inspectionEnabled
+            ? "Press SPACE to start inspection"
+            : "Press and hold SPACE to start";
+}
+
+
+function resetTimerDisplay() {
+
+    timerRunning = false;
+    inspectionRunning = false;
+
+    clearInterval(timerInterval);
+    clearInterval(inspectionInterval);
+
+    timerInterval = null;
+    inspectionInterval = null;
+
+    timerElement.textContent =
+        "0.00";
+
+    timerElement.className =
+        "timer";
+}
+
+
+function startTimer() {
+
+    if (Date.now() < cooldownUntil) {
+        return;
+    }
+
+    if (timerRunning) {
+        return;
+    }
+
+    timerRunning = true;
+
+    timerStart =
+        performance.now();
+
+    statusElement.textContent =
+        "Solving...";
+
+    timerElement.className =
+        "timer";
+
+    timerInterval =
+        setInterval(
+            updateTimer,
+            10
+        );
+}
+
+
+function updateTimer() {
+
+    if (!timerRunning) {
+        return;
+    }
+
+    const elapsed =
+        (performance.now() - timerStart) / 1000;
+
+    timerElement.textContent =
+        elapsed.toFixed(2);
+}
+
+
+function stopTimer() {
+
+    if (!timerRunning) {
+        return;
+    }
+
+    timerRunning = false;
+
+    clearInterval(timerInterval);
+
+    timerInterval = null;
+
+    const finalTime =
+        (performance.now() - timerStart) / 1000;
+
+    timerElement.textContent =
+        finalTime.toFixed(2);
+
+    statusElement.textContent =
+        "Solve finished";
+
+    cooldownUntil =
+        Date.now() + 1000;
+
+    recordSolve(finalTime);
+}
+
+
+function startInspection() {
+
+    if (!inspectionEnabled) {
+        return;
+    }
+
+    if (inspectionRunning || timerRunning) {
+        return;
+    }
+
+    if (Date.now() < cooldownUntil) {
+        return;
+    }
+
+    inspectionRunning = true;
+
+    inspectionStart =
+        performance.now();
+
+    timerElement.textContent =
+        "15.00";
+
+    timerElement.className =
+        "timer inspection-normal";
+
+    statusElement.textContent =
+        "Inspection";
+
+    inspectionInterval =
+        setInterval(
+            updateInspection,
+            10
+        );
+}
+
+
+function updateInspection() {
+
+    if (!inspectionRunning) {
+        return;
+    }
+
+    const elapsed =
+        (performance.now() - inspectionStart) / 1000;
+
+    const remaining =
+        15 - elapsed;
+
+    if (remaining <= 0) {
+
+        timerElement.textContent =
+            "0.00";
+
+        timerElement.className =
+            "timer inspection-danger";
+
+        statusElement.textContent =
+            "Inspection time exceeded";
+
+        return;
+    }
+
+    timerElement.textContent =
+        remaining.toFixed(2);
+
+    if (remaining <= 3) {
+
+        timerElement.className =
+            "timer inspection-danger";
+
+    } else if (remaining <= 8) {
+
+        timerElement.className =
+            "timer inspection-warning";
+
+    } else {
+
+        timerElement.className =
+            "timer inspection-normal";
+    }
+}
+
+
+function stopInspectionAndStartSolve() {
+
+    if (!inspectionRunning) {
+        return;
+    }
+
+    /*
+       The solve cannot start during
+       the first 1 second of inspection.
+    */
+    const inspectionElapsed =
+        performance.now() - inspectionStart;
+
+    if (inspectionElapsed < 1000) {
+        return;
+    }
+
+    inspectionRunning = false;
+
+    clearInterval(
+        inspectionInterval
+    );
+
+    inspectionInterval = null;
+
+    startTimer();
+}
+
+
+function recordSolve(time) {
+
+    solves.unshift({
+
+        id: Date.now(),
+
+        time: time,
+
+        penalty: "",
+
+        scramble: currentScramble
+
+    });
+
+    saveData();
+
+    renderHistory();
+
+    updateStats();
+
+    currentScramble =
+        generateScramble();
+
+    scrambleElement.textContent =
+        currentScramble;
+
+    statusElement.textContent =
+        inspectionEnabled
+            ? "Press SPACE to start inspection"
+            : "Press and hold SPACE to start";
+}
+
+
+function formatSolve(solve) {
+
+    if (solve.penalty === "DNF") {
+        return "DNF";
+    }
+
+    if (solve.penalty === "+2") {
+
+        return (
+            solve.time + 2
+        ).toFixed(2) + " +2";
+    }
+
+    return solve.time.toFixed(2);
+}
+
+
+function renderHistory() {
+
+    if (solves.length === 0) {
+
+        historyElement.innerHTML = `
+            <div class="empty-history">
+                No solves yet.
+            </div>
+        `;
+
+        return;
+    }
+
+    historyElement.innerHTML = "";
+
+    solves.forEach(
+        (solve, index) => {
+
+            const solveElement =
+                document.createElement("div");
+
+            solveElement.className =
+                "solve";
+
+            const hasScramble =
+                solve.scramble &&
+                solve.scramble.trim() !== "";
+
+            solveElement.innerHTML = `
+
+                <div class="solve-top">
+
+                    <div>
+
+                        <div class="solve-number">
+                            #${solves.length - index}
+                        </div>
+
+                        <div class="solve-time">
+                            ${formatSolve(solve)}
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="solve-buttons">
+
+                    ${
+                        hasScramble
+                        ? `
+                            <button class="scramble-button">
+                                Scramble
+                            </button>
+                          `
+                        : ""
+                    }
+
+                    <button class="plus-two-button">
+                        +2
+                    </button>
+
+                    <button class="dnf-button">
+                        DNF
+                    </button>
+
+                    <button class="delete-button">
+                        Delete
+                    </button>
+
+                </div>
+
+                <div class="scramble-box">
+                    ${
+                        hasScramble
+                        ? solve.scramble
+                        : "Scramble not saved for this solve."
+                    }
+                </div>
+            `;
+
+            const scrambleButton =
+                solveElement.querySelector(
+                    ".scramble-button"
+                );
+
+            if (scrambleButton) {
+
+                scrambleButton.addEventListener(
+                    "click",
+                    () => {
+
+                        const box =
+                            solveElement.querySelector(
+                                ".scramble-box"
+                            );
+
+                        box.classList.toggle(
+                            "show"
+                        );
+
+                        scrambleButton.textContent =
+                            box.classList.contains(
+                                "show"
+                            )
+                            ? "Hide Scramble"
+                            : "Scramble";
+                    }
+                );
+            }
+
+            solveElement
+                .querySelector(
+                    ".plus-two-button"
+                )
+                .addEventListener(
+                    "click",
+                    () => {
+
+                        if (
+                            solve.penalty === "+2"
+                        ) {
+
+                            solve.penalty = "";
+
+                        } else {
+
+                            solve.penalty = "+2";
+                        }
+
+                        saveData();
+                        renderHistory();
+                        updateStats();
+                    }
+                );
+
+            solveElement
+                .querySelector(
+                    ".dnf-button"
+                )
+                .addEventListener(
+                    "click",
+                    () => {
+
+                        if (
+                            solve.penalty === "DNF"
+                        ) {
+
+                            solve.penalty = "";
+
+                        } else {
+
+                            solve.penalty = "DNF";
+                        }
+
+                        saveData();
+                        renderHistory();
+                        updateStats();
+                    }
+                );
+
+            solveElement
+                .querySelector(
+                    ".delete-button"
+                )
+                .addEventListener(
+                    "click",
+                    () => {
+
+                        solves =
+                            solves.filter(
+                                s =>
+                                    s.id !== solve.id
+                            );
+
+                        saveData();
+                        renderHistory();
+                        updateStats();
+                    }
+                );
+
+            historyElement.appendChild(
+                solveElement
+            );
+        }
+    );
+}
+
+
+function validTimes(list) {
+
+    return list
+
+        .filter(
+            solve =>
+                solve.penalty !== "DNF"
+        )
+
+        .map(
+            solve =>
+                solve.penalty === "+2"
+                    ? solve.time + 2
+                    : solve.time
+        );
+}
+
+
+function averageLast(count) {
+
+    if (solves.length < count) {
+        return null;
+    }
+
+    const last =
+        solves.slice(0, count);
+
+    const times =
+        validTimes(last);
+
+    if (times.length !== count) {
+        return null;
+    }
+
+    return (
+        times.reduce(
+            (a, b) => a + b,
+            0
+        ) / times.length
+    );
+}
+
+
+function updateStats() {
+
+    solveCountElement.textContent =
+        solves.length;
+
+    const times =
+        validTimes(solves);
+
+    if (times.length > 0) {
+
+        bestElement.textContent =
+            Math.min(...times)
+                .toFixed(2);
+
+    } else {
+
+        bestElement.textContent =
+            "--";
+    }
+
+    const ao5 =
+        averageLast(5);
+
+    ao5Element.textContent =
+        ao5 === null
+            ? "--"
+            : ao5.toFixed(2);
+
+    const ao12 =
+        averageLast(12);
+
+    ao12Element.textContent =
+        ao12 === null
+            ? "--"
+            : ao12.toFixed(2);
+}
+
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (event.code !== "Space") {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (spaceHeld) {
+            return;
+        }
+
+        spaceHeld = true;
+
+        if (timerRunning) {
+
+            stopTimer();
+
+            return;
+        }
+
+        if (inspectionRunning) {
+            return;
+        }
+
+        if (Date.now() < cooldownUntil) {
+            return;
+        }
+
+        if (inspectionEnabled) {
+
+            startInspection();
+
+            return;
+        }
+    }
+);
+
+
+document.addEventListener(
+    "keyup",
+    event => {
+
+        if (event.code !== "Space") {
+            return;
+        }
+
+        event.preventDefault();
+
+        spaceHeld = false;
+
+        if (Date.now() < cooldownUntil) {
+            return;
+        }
+
+        if (inspectionRunning) {
+
+            stopInspectionAndStartSolve();
+
+            return;
+        }
+
+        if (
+            !timerRunning &&
+            !inspectionEnabled
+        ) {
+
+            startTimer();
+        }
+    }
+);
+
+
+inspectionToggle.addEventListener(
+    "change",
+    () => {
+
+        inspectionEnabled =
+            inspectionToggle.checked;
+
+        saveData();
+
+        resetTimerDisplay();
+
+        statusElement.textContent =
+            inspectionEnabled
+                ? "Press SPACE to start inspection"
+                : "Press and hold SPACE to start";
+    }
+);
+
+
+newScrambleButton.addEventListener(
+    "click",
+    () => {
+
+        currentScramble =
+            generateScramble();
+
+        scrambleElement.textContent =
+            currentScramble;
+
+        resetTimerDisplay();
+
+        statusElement.textContent =
+            inspectionEnabled
+                ? "Press SPACE to start inspection"
+                : "Press and hold SPACE to start";
+    }
+);
+
+
+clearHistoryButton.addEventListener(
+    "click",
+    () => {
+
+        if (solves.length === 0) {
+            return;
+        }
+
+        const confirmed =
+            confirm(
+                "Are you sure you want to delete all solves?"
+            );
+
+        if (!confirmed) {
+            return;
+        }
+
+        solves = [];
+
+        saveData();
+        renderHistory();
+        updateStats();
+    }
+);
+
+
+function saveData() {
+
+    localStorage.setItem(
+        "cubeTimerData",
+        JSON.stringify({
+
+            solves: solves,
+
+            inspectionEnabled:
+                inspectionEnabled
+
+        })
+    );
+}
+
+
+function loadData() {
+
+    const saved =
+        localStorage.getItem(
+            "cubeTimerData"
+        );
+
+    if (!saved) {
+        return;
+    }
+
+    try {
+
+        const data =
+            JSON.parse(saved);
+
+        if (
+            Array.isArray(
+                data.solves
+            )
+        ) {
+
+            solves =
+                data.solves;
+        }
+
+        if (
+            typeof data.inspectionEnabled ===
+            "boolean"
+        ) {
+
+            inspectionEnabled =
+                data.inspectionEnabled;
+
+            inspectionToggle.checked =
+                inspectionEnabled;
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Could not load saved timer data:",
+            error
+        );
+    }
+}
+
+
+loadData();
+
+renderHistory();
+
+updateStats();
+
+newScramble();
+
+</script>
+
+</body>
+</html>
