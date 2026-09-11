@@ -268,6 +268,26 @@ button.danger:hover {
 
     <main class="main-panel">
 
+        <select id="eventSelect" style="background:#2a2a2a;color:white;border:1px solid #444;padding:10px 14px;border-radius:8px;font-size:15px;margin-bottom:10px;">
+            <option value="2x2x2">2x2x2</option>
+            <option value="3x3x3" selected>3x3x3</option>
+            <option value="4x4x4">4x4x4</option>
+            <option value="5x5x5">5x5x5</option>
+            <option value="6x6x6">6x6x6</option>
+            <option value="7x7x7">7x7x7</option>
+            <option value="3x3-bld">3x3 BLD</option>
+            <option value="3x3-fm">3x3 FM</option>
+            <option value="3x3-oh">3x3 OH</option>
+            <option value="clock">Clock</option>
+            <option value="megaminx">Megaminx</option>
+            <option value="pyraminx">Pyraminx</option>
+            <option value="skewb">Skewb</option>
+            <option value="sq1">SQ1</option>
+            <option value="4x4-bld">4x4 BLD</option>
+            <option value="5x5-bld">5x5 BLD</option>
+            <option value="3x3-mbld">3x3 MBLD</option>
+        </select>
+
         <div id="scramble" class="scramble">
             Loading scramble...
         </div>
@@ -342,7 +362,7 @@ button.danger:hover {
 <script>
 
 let solves = [];
-let currentScramble = "";
+let currentScramble = "";\nlet currentEvent = "3x3x3";
 let inspectionEnabled = false;
 
 let timerRunning = false;
@@ -391,53 +411,107 @@ const newScrambleButton =
 const clearHistoryButton =
     document.getElementById("clearHistory");
 
+const eventSelect =
+    document.getElementById("eventSelect");
+
 
 const faces = ["U", "D", "L", "R", "F", "B"];
 const modifiers = ["", "'", "2"];
 
-function generateScramble() {
+function randomMove(moves) {
+    return moves[Math.floor(Math.random() * moves.length)];
+}
 
+function generateNxNScramble(size) {
+    const faces = ["U", "D", "L", "R", "F", "B"];
+    const modifiers = ["", "'", "2"];
     const result = [];
-
     let previousFace = "";
     let previousAxis = "";
 
     const axis = {
-        U: "UD",
-        D: "UD",
-        L: "LR",
-        R: "LR",
-        F: "FB",
-        B: "FB"
+        U: "UD", D: "UD",
+        L: "LR", R: "LR",
+        F: "FB", B: "FB"
     };
 
-    while (result.length < 20) {
+    const lengths = {2: 9, 3: 20, 4: 40, 5: 60, 6: 80, 7: 100};
 
-        const face =
-            faces[Math.floor(
-                Math.random() * faces.length
-            )];
+    while (result.length < lengths[size]) {
+        const face = randomMove(faces);
+        if (face === previousFace || axis[face] === previousAxis) continue;
 
-        if (face === previousFace) {
-            continue;
-        }
+        let move = face + randomMove(modifiers);
+        if (size >= 4 && Math.random() < 0.35) move += "w";
 
-        if (axis[face] === previousAxis) {
-            continue;
-        }
-
-        const modifier =
-            modifiers[Math.floor(
-                Math.random() * modifiers.length
-            )];
-
-        result.push(face + modifier);
-
+        result.push(move);
         previousFace = face;
         previousAxis = axis[face];
     }
 
     return result.join(" ");
+}
+
+function generateScramble() {
+    if (["2x2x2","3x3x3","4x4x4","5x5x5","6x6x6","7x7x7"].includes(currentEvent)) {
+        return generateNxNScramble(Number(currentEvent[0]));
+    }
+
+    if (["3x3-bld","3x3-fm","3x3-oh","3x3-mbld"].includes(currentEvent)) {
+        return generateNxNScramble(3);
+    }
+
+    if (currentEvent === "4x4-bld") return generateNxNScramble(4);
+    if (currentEvent === "5x5-bld") return generateNxNScramble(5);
+
+    if (currentEvent === "pyraminx") {
+        const result = [], faces = ["R","L","U","B"], mods = ["","'"];
+        let previous = "";
+        while (result.length < 10) {
+            const face = randomMove(faces);
+            if (face === previous) continue;
+            result.push(face + randomMove(mods));
+            previous = face;
+        }
+        return result.join(" ");
+    }
+
+    if (currentEvent === "skewb") {
+        const result = [];
+        while (result.length < 9) result.push(randomMove(["R","L","U","B"]));
+        return result.join(" ");
+    }
+
+    if (currentEvent === "sq1") {
+        const result = [];
+        while (result.length < 12) {
+            const a = Math.floor(Math.random()*7)-3;
+            const b = Math.floor(Math.random()*7)-3;
+            if (a === 0 && b === 0) continue;
+            result.push("(" + a + "," + b + ")");
+        }
+        return result.join(" / ");
+    }
+
+    if (currentEvent === "clock") {
+        const moves = ["UR","DR","DL","UL","U","R","D","L","ALL"];
+        const mods = ["++","--"];
+        const result = [];
+        while (result.length < 14) result.push(randomMove(moves) + randomMove(mods));
+        return result.join(" ");
+    }
+
+    if (currentEvent === "megaminx") {
+        const result = [];
+        for (let i = 0; i < 77; i++) {
+            result.push(i % 2 === 0
+                ? randomMove(["R++","R--"])
+                : randomMove(["D++","D--"]));
+        }
+        return result.join(" ");
+    }
+
+    return generateNxNScramble(3);
 }
 
 
@@ -1081,6 +1155,16 @@ inspectionToggle.addEventListener(
 );
 
 
+eventSelect.addEventListener(
+    "change",
+    () => {
+        currentEvent = eventSelect.value;
+        newScramble();
+        saveData();
+    }
+);
+
+
 newScrambleButton.addEventListener(
     "click",
     () => {
@@ -1136,7 +1220,10 @@ function saveData() {
             solves: solves,
 
             inspectionEnabled:
-                inspectionEnabled
+                inspectionEnabled,
+
+            currentEvent:
+                currentEvent
 
         })
     );
@@ -1179,6 +1266,19 @@ function loadData() {
 
             inspectionToggle.checked =
                 inspectionEnabled;
+        }
+
+        if (
+            typeof data.currentEvent ===
+            "string" &&
+            [
+                "2x2x2","3x3x3","4x4x4","5x5x5","6x6x6","7x7x7",
+                "3x3-bld","3x3-fm","3x3-oh","clock","megaminx",
+                "pyraminx","skewb","sq1","4x4-bld","5x5-bld","3x3-mbld"
+            ].includes(data.currentEvent)
+        ) {
+            currentEvent = data.currentEvent;
+            eventSelect.value = currentEvent;
         }
 
     } catch (error) {
