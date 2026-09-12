@@ -376,6 +376,7 @@ let timerInterval = null;
 let inspectionInterval = null;
 
 let spaceHeld = false;
+let spaceHoldStart = 0;
 
 let cooldownUntil = 0;
 
@@ -650,7 +651,7 @@ function startInspection() {
         performance.now();
 
     timerElement.textContent =
-        "15.00";
+        "0.00";
 
     timerElement.className =
         "timer inspection-normal";
@@ -675,40 +676,46 @@ function updateInspection() {
     const elapsed =
         (performance.now() - inspectionStart) / 1000;
 
-    const remaining =
-        15 - elapsed;
-
-    if (remaining <= 0) {
+    if (elapsed >= 17) {
 
         timerElement.textContent =
-            "0.00";
+            "DNF";
 
         timerElement.className =
             "timer inspection-danger";
 
         statusElement.textContent =
-            "Inspection time exceeded";
+            "Inspection time exceeded — DNF";
 
         return;
     }
 
     timerElement.textContent =
-        remaining.toFixed(2);
+        elapsed.toFixed(2);
 
-    if (remaining <= 3) {
+    if (elapsed >= 15) {
 
         timerElement.className =
             "timer inspection-danger";
 
-    } else if (remaining <= 8) {
+        statusElement.textContent =
+            "Inspection time exceeded — +2";
+
+    } else if (elapsed >= 12) {
 
         timerElement.className =
             "timer inspection-warning";
+
+        statusElement.textContent =
+            "Inspection";
 
     } else {
 
         timerElement.className =
             "timer inspection-normal";
+
+        statusElement.textContent =
+            "Inspection";
     }
 }
 
@@ -1077,6 +1084,7 @@ document.addEventListener(
         }
 
         spaceHeld = true;
+        spaceHoldStart = performance.now();
 
         if (timerRunning) {
 
@@ -1095,8 +1103,7 @@ document.addEventListener(
 
         if (inspectionEnabled) {
 
-            startInspection();
-
+            // Inspection starts only after Space has been held for 1 second.
             return;
         }
     }
@@ -1126,10 +1133,21 @@ document.addEventListener(
             return;
         }
 
-        if (
-            !timerRunning &&
-            !inspectionEnabled
-        ) {
+        if (inspectionEnabled) {
+
+            // Holding Space for 1 second starts inspection.
+            if (
+                performance.now() - spaceHoldStart >= 1000
+            ) {
+
+                startInspection();
+
+            }
+
+            return;
+        }
+
+        if (!timerRunning) {
 
             startTimer();
         }
